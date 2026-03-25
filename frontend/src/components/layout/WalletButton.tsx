@@ -2,18 +2,176 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { shortenAddress } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { fcl } from "@/lib/fcl";
+
+// Wallets to suppress from the picker — keyed by provider address or service uid.
+// Blocto shut down their Flow wallet service in 2024.
+// Addresses confirmed from live FCL Discovery API response (may differ from docs).
+const EXCLUDED_WALLET_ADDRESSES = new Set([
+  "0xf086a545ce3c552d", // Blocto — documented testnet/mainnet address
+  "0x55ad22f01ef568a1", // Blocto — live API address (testnet)
+]);
+const EXCLUDED_WALLET_UIDS = new Set([
+  "blocto#authn", // Blocto uid — stable across address changes
+]);
+
+interface WalletService {
+  uid: string;
+  endpoint: string;
+  method: string;
+  provider?: {
+    name?: string;
+    icon?: string;
+    address?: string;
+    color?: string;
+    description?: string;
+  };
+}
+
+// ─── Wallet Picker Modal ──────────────────────────────────────────────────────
+
+function WalletPickerModal({
+  isOpen,
+  onClose,
+  onSelect,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (service: WalletService) => void;
+}) {
+  const [services, setServices] = useState<WalletService[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setLoading(true);
+
+    // Fetch wallets directly from the FCL Discovery HTTP API.
+    // Using fetch (not fcl.discovery.authn.subscribe) gives us full control
+    // over the request body, which must include supportedStrategies and
+    // userAgent for the discovery service to return a valid wallet list.
+    const network = process.env.NEXT_PUBLIC_FLOW_NETWORK ?? "testnet";
+    const endpoint = `https://fcl-discovery.onflow.org/api/${network}/authn`;
+
+    fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        type: ["authn"],
+        fclVersion: "1.21.9",
+        include: [],
+        exclude: [],
+        features: { suggested: [] },
+        userAgent: navigator.userAgent,
+        clientServices: [],
+        supportedStrategies: [
+          "HTTP/POST",
+          "IFRAME/RPC",
+          "POP/RPC",
+          "TAB/RPC",
+          "EXT/RPC",
+          "WC/RPC",
+        ],
+        network,
+        port: null,
+      }),
+    })
+      .then((res) => res.json())
+      .then((wallets: WalletService[]) => {
+        const filtered = wallets.filter(
+          (w) =>
+            (!w.provider?.address ||
+              !EXCLUDED_WALLET_ADDRESSES.has(w.provider.address)) &&
+            !EXCLUDED_WALLET_UIDS.has(w.uid),
+        );
+        setServices(filtered);
+      })
+      .catch(() => setServices([]))
+      .finally(() => setLoading(false));
+  }, [isOpen]);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Connect a Wallet">
+      <div className="space-y-2 py-1 min-h-[160px]">
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-orange border-t-transparent" />
+          </div>
+        ) : services.length === 0 ? (
+          <p className="py-8 text-center text-sm text-gray-500">
+            No wallets found. Make sure you have a Flow-compatible wallet
+            installed.
+          </p>
+        ) : (
+          services.map((service) => (
+            <button
+              key={service.uid}
+              onClick={() => onSelect(service)}
+              className="flex w-full items-center gap-3 rounded-lg border border-gray-100 bg-white px-4 py-3 text-left transition-all hover:border-brand-orange/30 hover:bg-orange-50"
+            >
+              {service.provider?.icon ? (
+                <Image
+                  src={service.provider.icon}
+                  alt={service.provider.name ?? "Wallet"}
+                  width={36}
+                  height={36}
+                  className="rounded-lg"
+                  unoptimized
+                />
+              ) : (
+                <div
+                  className="h-9 w-9 rounded-lg"
+                  style={{
+                    backgroundColor: service.provider?.color ?? "#e5e7eb",
+                  }}
+                />
+              )}
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-brand-dark">
+                  {service.provider?.name ?? "Unknown Wallet"}
+                </p>
+                {service.provider?.description && (
+                  <p className="text-xs text-gray-500 line-clamp-1">
+                    {service.provider.description}
+                  </p>
+                )}
+              </div>
+              <span className="text-xs text-gray-400">→</span>
+            </button>
+          ))
+        )}
+
+        <p className="pt-2 text-center text-xs text-gray-400">
+          Don&apos;t have a wallet?{" "}
+          <a
+            href="https://wallet.flow.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-orange hover:underline"
+          >
+            Get Flow Wallet →
+          </a>
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Wallet Button ────────────────────────────────────────────────────────────
 
 export function WalletButton() {
-  const { isLoggedIn, isLoading, isDapper, address, logIn, logOut } = useAuth();
+  const { isLoggedIn, isLoading, isDapper, address, logOut } = useAuth();
+  const [showPicker, setShowPicker] = useState(false);
   const [showDapperModal, setShowDapperModal] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  // Set to true only when the user actively clicks "Connect Wallet" this session.
-  // Prevents redirecting users who already have a stored session.
+  // Tracks whether this specific button click initiated the login flow.
+  // Prevents auto-redirecting users whose FCL session was restored on page load.
   const loginInitiated = useRef(false);
 
   useEffect(() => {
@@ -23,9 +181,12 @@ export function WalletButton() {
     }
   }, [isLoggedIn, pathname, router]);
 
-  const handleLogin = () => {
+  const handleWalletSelect = async (service: WalletService) => {
     loginInitiated.current = true;
-    logIn();
+    setShowPicker(false);
+    // Authenticate with the chosen wallet service directly — bypasses the iframe
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (fcl as any).authenticate({ service });
   };
 
   if (isLoading) {
@@ -36,9 +197,17 @@ export function WalletButton() {
 
   if (!isLoggedIn) {
     return (
-      <Button variant="primary" size="md" onClick={handleLogin}>
-        Connect Wallet
-      </Button>
+      <>
+        <Button variant="primary" size="md" onClick={() => setShowPicker(true)}>
+          Connect Wallet
+        </Button>
+
+        <WalletPickerModal
+          isOpen={showPicker}
+          onClose={() => setShowPicker(false)}
+          onSelect={handleWalletSelect}
+        />
+      </>
     );
   }
 
@@ -78,7 +247,7 @@ export function WalletButton() {
           <p className="text-sm text-gray-600">
             Moments Money requires direct collateral transfers, which Dapper
             Wallet doesn&apos;t support. To use the protocol, migrate your
-            Moments to Flow Wallet or Blocto.
+            Moments to Flow Wallet, Lilico, or NuFi.
           </p>
           <div className="rounded-card border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="text-sm font-medium text-amber-900">

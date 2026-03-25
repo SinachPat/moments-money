@@ -27,7 +27,23 @@
       "Bash(cp /Users/USER/Desktop/moments-money-logo.png /Users/USER/Desktop/moments-money/frontend/src/app/favicon.png)",
       "Bash(ls -t ~/Desktop/*.png ~/Downloads/*.png)",
       "Bash(npm run:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(flow version:*)",
+      "Bash(chmod +x /Users/USER/Desktop/moments-money/scripts/register-testnet-collections.sh)",
+      "WebFetch(domain:fcl-discovery.onflow.org)",
+      "Bash(curl -s \"https://fcl-discovery.onflow.org/api/testnet/authn\" -H \"Accept: application/json\")",
+      "Bash(curl -s \"https://fcl-discovery.onflow.org/testnet/authn\")",
+      "Bash(curl -s \"https://fcl-discovery.onflow.org/api/testnet/authn?include=blocto\" -H \"Accept: application/json\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(grep -o .{200}[Bb]locto.{200} /Users/USER/Desktop/moments-money/frontend/node_modules/@onflow/fcl-core/dist/fcl-core.js)",
+      "Bash(head -3 grep -o '.\\\\{100\\\\}[Bb]locto.\\\\{100\\\\}' /Users/USER/Desktop/moments-money/frontend/node_modules/@onflow/fcl-core/dist/fcl-core.module.js)",
+      "Bash(python3 -c \":*)",
+      "Bash(curl -s \"https://fcl-discovery.onflow.org/_next/static/chunks/pages/index-6ad541bdcfd35bdd.js\")",
+      "Bash(curl -s \"https://fcl-discovery.onflow.org/api/testnet/authn\" -H \"Accept: application/json\" -H \"Referer: https://fcl-discovery.onflow.org/testnet/authn\" -H \"User-Agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36\")",
+      "Bash(curl -sv \"https://fcl-discovery.onflow.org/api/testnet/authn\" -H \"Accept: application/json\" -H \"Origin: https://fcl-discovery.onflow.org\" -H \"Referer: https://fcl-discovery.onflow.org/testnet/authn\")",
+      "Bash(curl -s \"https://fcl-discovery.onflow.org/api/testnet/wallets?type[]=authn&fclVersion=1.21.9\" -H \"Referer: https://fcl-discovery.onflow.org/testnet/authn\" -H \"Accept: application/json\")",
+      "Bash(python3:*)",
+      "Bash(curl -s \"https://fcl-discovery.onflow.org/_next/static/chunks/ce3a710f-fd7b42cf4525a8d3.js\")",
+      "WebSearch"
     ]
   }
 }

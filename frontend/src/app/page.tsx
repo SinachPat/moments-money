@@ -395,7 +395,7 @@ export default function Home() {
             {/* Trust signals */}
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <span className="text-xs text-white/30">Works with</span>
-              {["Flow Wallet", "Blocto", "Lilico"].map((w) => (
+              {["Flow Wallet", "Lilico", "NuFi", "Ledger"].map((w) => (
                 <span
                   key={w}
                   className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white/50"
