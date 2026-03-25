@@ -56,17 +56,11 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 // ─── Collections page ─────────────────────────────────────────────────────────
 
 export default function CollectionsPage() {
-  const { collections, isLoading } = useAllCollections();
+  const { collections, isLoading, error } = useAllCollections();
 
   // useAllCollections returns both active and inactive — split for display
   const active = collections.filter((c) => c.isActive);
   const inactive = collections.filter((c) => !c.isActive);
-
-  const COMING_SOON = [
-    { name: "NFL ALL DAY", status: "Under Review" },
-    { name: "LaLiga Golazos", status: "Under Review" },
-    { name: "UFC Strike", status: "Under Review" },
-  ];
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -95,6 +89,10 @@ export default function CollectionsPage() {
                 <div key={i} className="h-64 animate-pulse rounded-card bg-white" />
               ))}
             </div>
+          ) : error ? (
+            <p className="text-sm text-red-500">
+              Failed to load collections: {(error as Error).message}
+            </p>
           ) : active.length === 0 ? (
             <p className="text-sm text-gray-500">
               No collections are currently active.
@@ -209,28 +207,6 @@ export default function CollectionsPage() {
               </div>
             </div>
           )}
-
-          {/* Coming soon */}
-          <div>
-            <h2 className="mb-4 text-base font-semibold text-gray-500">
-              More collections coming soon
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {COMING_SOON.map(({ name, status }) => (
-                <div
-                  key={name}
-                  className="rounded-card border border-dashed border-[rgba(66,87,138,0.20)] bg-white/40 p-6"
-                >
-                  <h3 className="mb-2 text-lg font-semibold text-gray-400">
-                    {name}
-                  </h3>
-                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-400">
-                    {status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* FAQ */}
           <div>

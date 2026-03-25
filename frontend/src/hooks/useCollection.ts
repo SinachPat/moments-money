@@ -38,7 +38,7 @@ access(all) fun main(contractAddress: Address, collectionIdentifier: String, nft
 
 /** Returns all collections including inactive ones — used for admin/display views. */
 export function useAllCollections() {
-  const { data, isLoading } = useQuery<CollectionConfig[]>({
+  const { data, isLoading, error } = useQuery<CollectionConfig[]>({
     queryKey: ["allCollections", contractAddress],
     queryFn: () =>
       executeScript<CollectionConfig[]>(GET_ALL_COLLECTIONS, (arg, t) => [
@@ -49,7 +49,7 @@ export function useAllCollections() {
     // No select filter — returns both active and inactive
   });
 
-  return { collections: data ?? [], isLoading };
+  return { collections: data ?? [], isLoading, error };
 }
 
 /** Returns active-only collections — use this for borrow flow and UI selectors. */
