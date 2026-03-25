@@ -2,6 +2,7 @@
 .env
 .env.local
 *.pkey
+.env.example
 
 # Node
 node_modules/
