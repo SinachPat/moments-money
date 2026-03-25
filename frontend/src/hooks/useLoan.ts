@@ -5,7 +5,7 @@ import { executeScript } from "@/lib/fcl";
 import type { LoanInfo } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
 
-const contractAddress = process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "";
+const contractAddress = ( process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "").trim();
 
 const GET_ACTIVE_LOANS = `
 import MomentsMoney from 0xMomentsMoney

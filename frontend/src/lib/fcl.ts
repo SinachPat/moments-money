@@ -37,7 +37,7 @@ fcl.config({
   // We filter Blocto client-side in WalletButton.tsx rather than relying on
   // discovery.authn.exclude, which has a postMessage key mismatch in FCL 1.x.
   "discovery.authn.endpoint": authnEndpoint,
-  "0xMomentsMoney": process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "0x",
+  "0xMomentsMoney": (process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "0x").trim(),
 });
 
 export { fcl };

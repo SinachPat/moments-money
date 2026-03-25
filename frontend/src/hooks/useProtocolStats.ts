@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { executeScript } from "@/lib/fcl";
 import type { ProtocolStats } from "@/lib/types";
 
-const contractAddress = process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "";
+const contractAddress = ( process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "").trim();
 
 const GET_PROTOCOL_STATS = `
 import MomentsMoney from 0xMomentsMoney
