@@ -6,6 +6,7 @@ import { useProtocolStats } from "@/hooks/useProtocolStats";
 import { useCollections } from "@/hooks/useCollection";
 import { CollectionBadge } from "@/components/ui/CollectionBadge";
 import { formatFlow } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 // ─── Count-up animation ──────────────────────────────────────────────────────
 
@@ -320,6 +321,7 @@ const PREVIEW_COLLECTIONS = [
 export default function Home() {
   const { stats, isLoading: statsLoading } = useProtocolStats();
   const { collections, isLoading: collectionsLoading } = useCollections();
+  const { isLoggedIn, logIn } = useAuth();
 
   return (
     <>
@@ -367,12 +369,21 @@ export default function Home() {
               instantly — no selling, no credit check, no middlemen.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link
-                href="/borrow"
-                className="inline-flex h-12 items-center rounded px-7 text-base font-medium text-white bg-brand-orange transition-all duration-[250ms] hover:bg-brand-orange-hover hover:shadow-orange-glow"
-              >
-                Borrow Now
-              </Link>
+              {isLoggedIn ? (
+                <Link
+                  href="/borrow"
+                  className="inline-flex h-12 items-center rounded px-7 text-base font-medium text-white bg-brand-orange transition-all duration-[250ms] hover:bg-brand-orange-hover hover:shadow-orange-glow"
+                >
+                  Borrow Now
+                </Link>
+              ) : (
+                <button
+                  onClick={logIn}
+                  className="inline-flex h-12 items-center rounded px-7 text-base font-medium text-white bg-brand-orange transition-all duration-[250ms] hover:bg-brand-orange-hover hover:shadow-orange-glow"
+                >
+                  Connect Wallet
+                </button>
+              )}
               <a
                 href="#how-it-works"
                 className="inline-flex h-12 items-center rounded border border-white/20 px-7 text-base font-medium text-white transition-all duration-[250ms] hover:border-white/40 hover:bg-white/5"
@@ -715,12 +726,21 @@ export default function Home() {
           <p className="mb-10 text-lg text-gray-300">
             Get FLOW in minutes. Repay on your schedule. Keep every Moment.
           </p>
-          <Link
-            href="/borrow"
-            className="inline-flex h-12 items-center rounded px-8 text-base font-medium text-white bg-brand-orange transition-all duration-[250ms] hover:bg-brand-orange-hover hover:shadow-orange-glow"
-          >
-            Start Borrowing →
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              href="/borrow"
+              className="inline-flex h-12 items-center rounded px-8 text-base font-medium text-white bg-brand-orange transition-all duration-[250ms] hover:bg-brand-orange-hover hover:shadow-orange-glow"
+            >
+              Start Borrowing →
+            </Link>
+          ) : (
+            <button
+              onClick={logIn}
+              className="inline-flex h-12 items-center rounded px-8 text-base font-medium text-white bg-brand-orange transition-all duration-[250ms] hover:bg-brand-orange-hover hover:shadow-orange-glow"
+            >
+              Connect Wallet →
+            </button>
+          )}
         </div>
       </section>
     </>
