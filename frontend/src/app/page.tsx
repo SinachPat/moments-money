@@ -426,7 +426,7 @@ export default function Home() {
               },
               {
                 label: "Collections Supported",
-                value: statsLoading ? null : parseInt(stats?.totalCollections ?? "0"),
+                value: collectionsLoading ? null : collections.length,
                 suffix: "",
               },
             ] as const

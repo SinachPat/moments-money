@@ -16,8 +16,8 @@ interface FclService {
 }
 
 interface FclUser {
-  loggedIn: boolean | null;
-  addr: string | null;
+  loggedIn?: boolean | null;
+  addr?: string | null;
   services?: FclService[];
 }
 
@@ -48,12 +48,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FclUser>({ loggedIn: null, addr: null });
 
   useEffect(() => {
-    const unsubscribe = fcl.currentUser.subscribe((u: FclUser) => setUser(u));
+    // FCL's internal CurrentUser type is narrower than our interface — cast via any.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const unsubscribe = fcl.currentUser.subscribe((u: any) => setUser(u));
 
     // FCL can get stuck at loggedIn:null in some environments (e.g. React
     // StrictMode double-invoke). snapshot() resolves the current state
     // immediately and serves as a reliable fallback.
-    fcl.currentUser.snapshot().then((u: FclUser) => setUser(u));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fcl.currentUser.snapshot().then((u: any) => setUser(u));
 
     return () => unsubscribe();
   }, []);
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // The subscription fires again with loggedIn:true if a stored session exists.
   const isLoading = false;
   const isLoggedIn = user.loggedIn === true;
+
   const isDapper = isLoggedIn ? detectDapper(user.services) : false;
 
   return (
@@ -72,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoggedIn,
         isLoading,
         isDapper,
-        address: user.addr,
+        address: user.addr ?? null,
         logIn: fcl.authenticate,
         logOut: fcl.unauthenticate,
       }}

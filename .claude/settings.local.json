@@ -25,7 +25,9 @@
       "Bash(ls /tmp/*.png /tmp/*.jpg /tmp/*.webp)",
       "Bash(cp /Users/USER/Desktop/moments-money-logo.png /Users/USER/Desktop/moments-money/frontend/public/logo.png)",
       "Bash(cp /Users/USER/Desktop/moments-money-logo.png /Users/USER/Desktop/moments-money/frontend/src/app/favicon.png)",
-      "Bash(ls -t ~/Desktop/*.png ~/Downloads/*.png)"
+      "Bash(ls -t ~/Desktop/*.png ~/Downloads/*.png)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)"
     ]
   }
 }
