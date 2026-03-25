@@ -362,9 +362,9 @@ function BorrowContent() {
                           selectedCollection.collectionIdentifier.includes("TopShot")
                             ? "https://nbatopshot.com/search?view=i"
                             : selectedCollection.collectionIdentifier.includes("AllDay")
-                            ? "https://nflallday.com/marketplace"
+                            ? "https://nflallday.com/marketplace/moments"
                             : selectedCollection.collectionIdentifier.includes("UFC")
-                            ? "https://ufcstrike.com/marketplace"
+                            ? "https://ufcstrike.com"
                             : "#"
                         }
                         target="_blank"
