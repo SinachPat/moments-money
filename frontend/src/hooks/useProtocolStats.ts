@@ -7,7 +7,7 @@ import type { ProtocolStats } from "@/lib/types";
 const contractAddress = process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "";
 
 const GET_PROTOCOL_STATS = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 
 access(all) fun main(contractAddress: Address): MomentsMoney.ProtocolStats {
     let manager = getAccount(contractAddress)

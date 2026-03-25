@@ -32,7 +32,7 @@ const DURATIONS = [
 // ─── Create loan Cadence transaction ─────────────────────────────────────────
 
 const CREATE_LOAN_TX = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 import "NonFungibleToken"
 import "FungibleToken"
 

@@ -13,7 +13,7 @@ import { getCollectionPaths } from "@/lib/collectionPaths";
 const contractAddress = process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "";
 
 const REPAY_LOAN_TX = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 import "FungibleToken"
 import "NonFungibleToken"
 import "FlowToken"

@@ -7,7 +7,7 @@ import type { CollectionConfig } from "@/lib/types";
 const contractAddress = process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "";
 
 const GET_ALL_COLLECTIONS = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 
 access(all) fun main(contractAddress: Address): [MomentsMoney.CollectionConfig] {
     let manager = getAccount(contractAddress)
@@ -17,7 +17,7 @@ access(all) fun main(contractAddress: Address): [MomentsMoney.CollectionConfig] 
 }`;
 
 const GET_COLLECTION_CONFIG = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 
 access(all) fun main(contractAddress: Address, identifier: String): MomentsMoney.CollectionConfig? {
     let manager = getAccount(contractAddress)
@@ -27,7 +27,7 @@ access(all) fun main(contractAddress: Address, identifier: String): MomentsMoney
 }`;
 
 const GET_MAX_BORROW = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 
 access(all) fun main(contractAddress: Address, collectionIdentifier: String, nftCount: UInt64): UFix64 {
     let manager = getAccount(contractAddress)

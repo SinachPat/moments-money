@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 const contractAddress = process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "";
 
 const GET_ACTIVE_LOANS = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 
 access(all) fun main(contractAddress: Address, borrower: Address): [MomentsMoney.LoanInfo] {
     let manager = getAccount(contractAddress)
@@ -18,7 +18,7 @@ access(all) fun main(contractAddress: Address, borrower: Address): [MomentsMoney
 }`;
 
 const GET_LOAN_INFO = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 
 access(all) fun main(contractAddress: Address, loanID: UInt64): MomentsMoney.LoanInfo? {
     let manager = getAccount(contractAddress)
@@ -28,7 +28,7 @@ access(all) fun main(contractAddress: Address, loanID: UInt64): MomentsMoney.Loa
 }`;
 
 const GET_OUTSTANDING_BALANCE = `
-import "MomentsMoney"
+import MomentsMoney from 0xMomentsMoney
 
 access(all) fun main(contractAddress: Address, loanID: UInt64): UFix64 {
     let manager = getAccount(contractAddress)
