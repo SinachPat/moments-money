@@ -87,6 +87,53 @@ transaction(
     }
 }`;
 
+// ─── Claim test Moments Cadence transaction (testnet only) ───────────────────
+
+const MOCK_MINTER_ADDRESS = "0x5f48399c13df4365";
+const MOCK_MOMENT_IDENTIFIER = "A.5f48399c13df4365.MockMoment.NFT";
+
+const CLAIM_TEST_MOMENTS_TX = `
+import NonFungibleToken from 0x631e88ae7f1d7c20
+import MockMoment       from 0x5f48399c13df4365
+
+transaction {
+    prepare(signer: auth(Storage, Capabilities) &Account) {
+
+        // Set up collection if not already present
+        if signer.storage.borrow<&MockMoment.Collection>(
+            from: MockMoment.CollectionStoragePath
+        ) == nil {
+            signer.storage.save(
+                <- MockMoment.createEmptyCollection(nftType: Type<@MockMoment.NFT>()),
+                to: MockMoment.CollectionStoragePath
+            )
+            let cap = signer.capabilities.storage.issue<&MockMoment.Collection>(
+                MockMoment.CollectionStoragePath
+            )
+            signer.capabilities.publish(cap, at: MockMoment.CollectionPublicPath)
+        }
+
+        // Borrow the public minter from the deployer account
+        let minterCap = getAccount(0x5f48399c13df4365)
+            .capabilities.get<&{MockMoment.MinterPublic}>(MockMoment.MinterPublicPath)
+        if !minterCap.check() {
+            panic("Could not borrow public Minter capability from deployer")
+        }
+        let minter = minterCap.borrow()!
+
+        // Borrow the signer's collection and mint 5 NFTs into it
+        let collection = signer.storage.borrow<&MockMoment.Collection>(
+            from: MockMoment.CollectionStoragePath
+        ) ?? panic("Collection not found")
+
+        var i = 0
+        while i < 5 {
+            collection.deposit(token: <- minter.mintNFT())
+            i = i + 1
+        }
+    }
+}`;
+
 // ─── FLOW/USD price hook ──────────────────────────────────────────────────────
 
 function useFlowPrice() {
@@ -153,6 +200,7 @@ function BorrowContent() {
   const { isLoggedIn, isLoading: authLoading, isDapper, address } = useAuth();
   const { collections, isLoading: collectionsLoading } = useCollections();
   const { execute, status: txStatus, txID, reset: resetTx } = useTransaction();
+  const { execute: executeClaim, status: claimStatus, reset: resetClaim } = useTransaction();
   const flowPrice = useFlowPrice();
 
   const [selectedCollection, setSelectedCollection] =
@@ -251,6 +299,14 @@ function BorrowContent() {
       arg(durationSeconds.toFixed(8), t.UFix64),
       arg(contractAddress, t.Address),
     ]);
+  }
+
+  const isMockMoment =
+    selectedCollection?.collectionIdentifier === MOCK_MOMENT_IDENTIFIER;
+
+  async function handleClaimTestMoments() {
+    resetClaim();
+    await executeClaim(CLAIM_TEST_MOMENTS_TX, () => []);
   }
 
   // Redirect if not connected (after auth resolves)
@@ -357,22 +413,49 @@ function BorrowContent() {
                         You don&apos;t have any{" "}
                         {selectedCollection.displayName} items.
                       </p>
-                      <a
-                        href={
-                          selectedCollection.collectionIdentifier.includes("TopShot")
-                            ? "https://nbatopshot.com/search?view=i"
-                            : selectedCollection.collectionIdentifier.includes("AllDay")
-                            ? "https://nflallday.com/marketplace/moments"
-                            : selectedCollection.collectionIdentifier.includes("UFC")
-                            ? "https://ufcstrike.com"
-                            : "#"
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-block text-sm text-brand-orange hover:opacity-75"
-                      >
-                        Check out the marketplace →
-                      </a>
+                      {isMockMoment ? (
+                        <div className="mt-4 flex flex-col items-center gap-2">
+                          <p className="text-xs text-gray-400">
+                            This is a testnet collection — claim 5 free test NFTs to try the borrow flow.
+                          </p>
+                          <button
+                            onClick={handleClaimTestMoments}
+                            disabled={claimStatus === "pending"}
+                            className="mt-1 rounded bg-brand-orange px-5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                          >
+                            {claimStatus === "pending"
+                              ? "Minting…"
+                              : claimStatus === "sealed"
+                              ? "✓ Claimed! Refresh to see your NFTs"
+                              : "Claim 5 test NFTs →"}
+                          </button>
+                          {claimStatus === "error" && (
+                            <button
+                              onClick={resetClaim}
+                              className="text-xs text-gray-400 hover:text-gray-600"
+                            >
+                              Transaction failed — tap to retry
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <a
+                          href={
+                            selectedCollection.collectionIdentifier.includes("TopShot")
+                              ? "https://nbatopshot.com/search?view=i"
+                              : selectedCollection.collectionIdentifier.includes("AllDay")
+                              ? "https://nflallday.com/marketplace/moments"
+                              : selectedCollection.collectionIdentifier.includes("UFC")
+                              ? "https://ufcstrike.com"
+                              : "#"
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-sm text-brand-orange hover:opacity-75"
+                        >
+                          Check out the marketplace →
+                        </a>
+                      )}
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">

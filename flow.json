@@ -3,6 +3,9 @@
     "MomentsMoney": {
       "source": "./contracts/MomentsMoney.cdc"
     },
+    "MockMoment": {
+      "source": "./contracts/MockMoment.cdc"
+    },
     "FungibleToken": {
       "aliases": {
         "emulator": "0xee82856bf20e2aa6",
@@ -79,7 +82,7 @@
       "emulator-account": ["MomentsMoney"]
     },
     "testnet": {
-      "testnet-deployer": ["MomentsMoney"]
+      "testnet-deployer": ["MomentsMoney", "MockMoment"]
     },
     "mainnet": {
       "mainnet-deployer": ["MomentsMoney"]

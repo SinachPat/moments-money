@@ -18,6 +18,11 @@ const KNOWN_PATHS: Record<string, { storage: string; public: string }> = {
     storage: "AllDayCollection",
     public: "AllDayCollection",
   },
+  // Testnet-only mock collection for end-to-end testing
+  "A.5f48399c13df4365.MockMoment.NFT": {
+    storage: "MockMomentCollection",
+    public: "MockMomentCollection",
+  },
 };
 
 export interface CollectionPaths {
