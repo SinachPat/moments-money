@@ -358,7 +358,15 @@ function BorrowContent() {
                         {selectedCollection.displayName} items.
                       </p>
                       <a
-                        href="https://nbatopshot.com/marketplace"
+                        href={
+                          selectedCollection.collectionIdentifier.includes("TopShot")
+                            ? "https://nbatopshot.com/search?view=i"
+                            : selectedCollection.collectionIdentifier.includes("AllDay")
+                            ? "https://nflallday.com/marketplace"
+                            : selectedCollection.collectionIdentifier.includes("UFC")
+                            ? "https://ufcstrike.com/marketplace"
+                            : "#"
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-2 inline-block text-sm text-brand-orange hover:opacity-75"
