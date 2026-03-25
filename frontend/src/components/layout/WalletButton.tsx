@@ -177,15 +177,13 @@ export function WalletButton() {
     }
   }, [isLoggedIn, pathname, router]);
 
-  const handleWalletSelect = async (service: WalletService) => {
+  const handleWalletSelect = async (_service: WalletService) => {
     loginInitiated.current = true;
     setShowPicker(false);
-    // Point FCL at this wallet's authn endpoint and let FCL drive the full
-    // auth protocol. Passing raw service objects from the HTTP discovery API
-    // to fcl.authenticate() breaks EXT/RPC wallets — FCL's extension-matching
-    // logic requires service objects that went through its internal pipeline.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (fcl as any).config.put("discovery.wallet", service.endpoint);
+    // FCL's EXT/RPC auth uses an internal extension registry that only FCL
+    // itself can populate. Passing raw service objects (from HTTP discovery)
+    // causes redirects to install URLs or blocked chrome-extension:// navigations.
+    // Calling authenticate() with no args lets FCL handle the full protocol.
     await fcl.authenticate();
   };
 
