@@ -33,8 +33,8 @@ const DURATIONS = [
 
 const CREATE_LOAN_TX = `
 import MomentsMoney from 0xMomentsMoney
-import "NonFungibleToken"
-import "FungibleToken"
+import NonFungibleToken from 0xNonFungibleToken
+import FungibleToken from 0xFungibleToken
 
 transaction(
     nftIDs: [UInt64],

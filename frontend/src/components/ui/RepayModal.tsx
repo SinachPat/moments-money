@@ -14,9 +14,9 @@ const contractAddress = process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "";
 
 const REPAY_LOAN_TX = `
 import MomentsMoney from 0xMomentsMoney
-import "FungibleToken"
-import "NonFungibleToken"
-import "FlowToken"
+import FungibleToken from 0xFungibleToken
+import NonFungibleToken from 0xNonFungibleToken
+import FlowToken from 0xFlowToken
 
 transaction(
     loanID: UInt64,
