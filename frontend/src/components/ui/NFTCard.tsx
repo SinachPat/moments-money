@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 interface NFTCardProps {
   id: string;
   name?: string;
@@ -33,12 +31,11 @@ export function NFTCard({
       {/* Thumbnail */}
       <div className="relative aspect-square w-full bg-gray-100">
         {thumbnail ? (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={thumbnail}
             alt={name ?? `NFT #${id}`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 50vw, 25vw"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <div className="flex h-full items-center justify-center">

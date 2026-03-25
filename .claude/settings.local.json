@@ -60,7 +60,19 @@
       "Bash(sed -i '' 's/process\\\\.env\\\\.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? \"\"\"\"/\\( process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? \"\"\"\"\\).trim\\(\\)/g' /Users/USER/Desktop/moments-money/frontend/src/hooks/useLoan.ts /Users/USER/Desktop/moments-money/frontend/src/hooks/useProtocolStats.ts)",
       "Bash(sed -i '' 's/process\\\\.env\\\\.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? \"\"0x\"\"/\\(process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? \"\"0x\"\"\\).trim\\(\\)/g' /Users/USER/Desktop/moments-money/frontend/src/lib/fcl.ts)",
       "Bash(flow transactions:*)",
-      "Bash(/tmp/check_wallet.cdc:*)"
+      "Bash(/tmp/check_wallet.cdc:*)",
+      "Bash(flow accounts:*)",
+      "Bash(/tmp/check_loan.cdc:*)",
+      "Bash(/tmp/check_nfts.cdc:*)",
+      "Bash(/tmp/check_loans.cdc:*)",
+      "Bash(curl -s \"https://testnet.flowscan.io/api/account/0xb7e8841bc70a1f44/transactions?limit=5\")",
+      "Bash(curl -s \"https://rest-testnet.onflow.org/v1/accounts/0xb7e8841bc70a1f44/transactions?limit=5\")",
+      "Bash(curl -s \"https://rest-testnet.onflow.org/v1/accounts/b7e8841bc70a1f44\")",
+      "Bash(/tmp/deployer_nfts.cdc:*)",
+      "Bash(/tmp/check_treasury.cdc:*)",
+      "Bash(curl -s \"https://rest-testnet.onflow.org/v1/accounts/5f48399c13df4365\")",
+      "Bash(flow contracts:*)",
+      "Bash(flow -f /Users/USER/Desktop/moments-money/flow.json accounts update-contract MockMoment /Users/USER/Desktop/moments-money/contracts/MockMoment.cdc --signer testnet-deployer --network testnet)"
     ]
   }
 }

@@ -21,10 +21,23 @@ export function useTransaction() {
       await waitForTransaction(id);
       setStatus("sealed");
       return id;
-    } catch (err) {
+    } catch (err: unknown) {
       setStatus("error");
-      setError(err instanceof Error ? err : new Error(String(err)));
-      throw err;
+      // FCL throws plain objects (not Error instances) for on-chain reverts.
+      // Extract errorMessage or message before wrapping.
+      let message = "Unknown error";
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === "object" && err !== null) {
+        const e = err as Record<string, unknown>;
+        message = String(e.errorMessage ?? e.message ?? JSON.stringify(err));
+      } else {
+        message = String(err);
+      }
+      console.error("[Transaction error]", message, err);
+      const error = new Error(message);
+      setError(error);
+      throw error;
     }
   }, []);
 

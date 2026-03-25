@@ -199,7 +199,7 @@ function BorrowContent() {
   const searchParams = useSearchParams();
   const { isLoggedIn, isLoading: authLoading, isDapper, address } = useAuth();
   const { collections, isLoading: collectionsLoading } = useCollections();
-  const { execute, status: txStatus, txID, reset: resetTx } = useTransaction();
+  const { execute, status: txStatus, txID, error: txError, reset: resetTx } = useTransaction();
   const { execute: executeClaim, status: claimStatus, reset: resetClaim } = useTransaction();
   const flowPrice = useFlowPrice();
 
@@ -289,16 +289,19 @@ function BorrowContent() {
   async function handleCreateLoan() {
     if (!selectedCollection || !paths || !address) return;
     resetTx();
-
-    await execute(CREATE_LOAN_TX, (arg, t) => [
-      arg(selectedNFTs, t.Array(t.UInt64)),
-      arg(selectedCollection.collectionIdentifier, t.String),
-      arg({ domain: "storage", identifier: paths.storage }, t.Path),
-      arg({ domain: "public", identifier: paths.public }, t.Path),
-      arg(borrowAmount.toFixed(8), t.UFix64),
-      arg(durationSeconds.toFixed(8), t.UFix64),
-      arg(contractAddress, t.Address),
-    ]);
+    try {
+      await execute(CREATE_LOAN_TX, (arg, t) => [
+        arg(selectedNFTs, t.Array(t.UInt64)),
+        arg(selectedCollection.collectionIdentifier, t.String),
+        arg({ domain: "storage", identifier: paths.storage }, t.Path),
+        arg({ domain: "public", identifier: paths.public }, t.Path),
+        arg(borrowAmount.toFixed(8), t.UFix64),
+        arg(durationSeconds.toFixed(8), t.UFix64),
+        arg(contractAddress, t.Address),
+      ]);
+    } catch {
+      // error state is set inside useTransaction — silences unhandled rejection
+    }
   }
 
   const isMockMoment =
@@ -629,6 +632,7 @@ function BorrowContent() {
                       status={txStatus}
                       txID={txID}
                       successMessage="Loan created! Your FLOW is on the way."
+                      errorMessage={txError?.message}
                     />
                     {txStatus === "sealed" && (
                       <div className="mt-3 text-center">

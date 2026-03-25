@@ -6,6 +6,7 @@ interface TransactionStatusProps {
   status: TxStatus;
   txID: string | null;
   successMessage: string;
+  errorMessage?: string;
 }
 
 const flowscanBase =
@@ -15,6 +16,7 @@ export function TransactionStatus({
   status,
   txID,
   successMessage,
+  errorMessage,
 }: TransactionStatusProps) {
   if (status === "idle") return null;
 
@@ -99,7 +101,9 @@ export function TransactionStatus({
               clipRule="evenodd"
             />
           </svg>
-          <span>Transaction failed. Please try again.</span>
+          <span className="flex-1">
+            {errorMessage ?? "Transaction failed. Please try again."}
+          </span>
         </>
       )}
     </div>

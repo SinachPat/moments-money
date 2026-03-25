@@ -1,14 +1,27 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Modal } from "./Modal";
 import { Button } from "./Button";
 import { TransactionStatus } from "./TransactionStatus";
 import { useOutstandingBalance } from "@/hooks/useLoan";
 import { useTransaction } from "@/hooks/useTransaction";
 import { useLoan } from "@/hooks/useLoan";
+import { useAuth } from "@/context/AuthContext";
+import { executeScript } from "@/lib/fcl";
 import { formatFlow } from "@/lib/utils";
 import { getCollectionPaths } from "@/lib/collectionPaths";
+
+const GET_FLOW_BALANCE = `
+import FungibleToken from 0xFungibleToken
+
+access(all) fun main(address: Address): UFix64 {
+    let cap = getAccount(address)
+        .capabilities.get<&{FungibleToken.Balance}>(/public/flowTokenBalance)
+    if !cap.check() { return 0.0 }
+    return cap.borrow()!.balance
+}`;
 
 const contractAddress = process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? "";
 
@@ -16,7 +29,6 @@ const REPAY_LOAN_TX = `
 import MomentsMoney from 0xMomentsMoney
 import FungibleToken from 0xFungibleToken
 import NonFungibleToken from 0xNonFungibleToken
-import FlowToken from 0xFlowToken
 
 transaction(
     loanID: UInt64,
@@ -61,9 +73,18 @@ interface RepayModalProps {
 }
 
 export function RepayModal({ loanID, isOpen, onClose, onSuccess }: RepayModalProps) {
+  const { address } = useAuth();
   const { loan } = useLoan(loanID);
   const { balance: outstandingBalance } = useOutstandingBalance(loanID);
-  const { execute, status: txStatus, txID, reset: resetTx } = useTransaction();
+  const { execute, status: txStatus, txID, error: txError, reset: resetTx } = useTransaction();
+
+  const { data: flowBalanceRaw } = useQuery<string>({
+    queryKey: ["flowBalance", address],
+    queryFn: () => executeScript<string>(GET_FLOW_BALANCE, (arg, t) => [arg(address!, t.Address)]),
+    enabled: !!address && isOpen,
+    refetchInterval: 15_000,
+  });
+  const flowBalance = parseFloat(flowBalanceRaw ?? "0");
 
   const outstandingNum = parseFloat(outstandingBalance);
   const principalNum = parseFloat(loan?.principal ?? "0");
@@ -98,16 +119,21 @@ export function RepayModal({ loanID, isOpen, onClose, onSuccess }: RepayModalPro
   const nftCount = loan?.nftIDs.length ?? 0;
   const paths = loan ? getCollectionPaths(loan.collectionIdentifier) : null;
 
+  const insufficientFlow = flowBalance > 0 && repayAmount > flowBalance;
+
   async function handleConfirm() {
     if (!paths) return;
     resetTx();
-
-    await execute(REPAY_LOAN_TX, (arg, t) => [
-      arg(loanID, t.UInt64),
-      arg(Math.min(repayAmount, outstandingNum).toFixed(8), t.UFix64),
-      arg({ domain: "public", identifier: paths.public }, t.Path),
-      arg(contractAddress, t.Address),
-    ]);
+    try {
+      await execute(REPAY_LOAN_TX, (arg, t) => [
+        arg(loanID, t.UInt64),
+        arg(Math.min(repayAmount, outstandingNum).toFixed(8), t.UFix64),
+        arg({ domain: "public", identifier: paths.public }, t.Path),
+        arg(contractAddress, t.Address),
+      ]);
+    } catch {
+      // error state is set inside useTransaction — silences unhandled rejection
+    }
   }
 
   function handleClose() {
@@ -190,19 +216,39 @@ export function RepayModal({ loanID, isOpen, onClose, onSuccess }: RepayModalPro
             </button>
           </div>
 
+          {/* Insufficient FLOW warning */}
+          {insufficientFlow && (
+            <div className="rounded border border-[#FEE2E2] bg-[#FEE2E2] px-4 py-3 text-xs leading-relaxed text-[#DC2626]">
+              Insufficient FLOW — your wallet has {formatFlow(flowBalance.toFixed(8))} but this
+              repayment requires {formatFlow(repayAmount.toFixed(8))}. Get more testnet FLOW from
+              the{" "}
+              <a
+                href="https://testnet-faucet.onflow.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2"
+              >
+                Flow faucet
+              </a>
+              .
+            </div>
+          )}
+
           {/* Partial / full message */}
-          <div
-            className={[
-              "rounded border px-4 py-3 text-xs leading-relaxed",
-              isFullRepayment
-                ? "border-[#DCFCE7] bg-[#DCFCE7] text-[#16A34A]"
-                : "border-amber-200 bg-amber-50 text-amber-800",
-            ].join(" ")}
-          >
-            {isFullRepayment
-              ? `Full repayment — your ${nftCount} item${nftCount !== 1 ? "s" : ""} will be returned immediately.`
-              : "Partial repayment — your items remain locked until the loan is fully repaid."}
-          </div>
+          {!insufficientFlow && (
+            <div
+              className={[
+                "rounded border px-4 py-3 text-xs leading-relaxed",
+                isFullRepayment
+                  ? "border-[#DCFCE7] bg-[#DCFCE7] text-[#16A34A]"
+                  : "border-amber-200 bg-amber-50 text-amber-800",
+              ].join(" ")}
+            >
+              {isFullRepayment
+                ? `Full repayment — your ${nftCount} item${nftCount !== 1 ? "s" : ""} will be returned immediately.`
+                : "Partial repayment — your items remain locked until the loan is fully repaid."}
+            </div>
+          )}
 
           {/* Transaction status */}
           {txStatus !== "idle" && (
@@ -214,6 +260,7 @@ export function RepayModal({ loanID, isOpen, onClose, onSuccess }: RepayModalPro
                   ? `Repaid! Your ${nftCount} item${nftCount !== 1 ? "s" : ""} are being returned.`
                   : "Partial repayment confirmed."
               }
+              errorMessage={txError?.message}
             />
           )}
 
@@ -224,7 +271,7 @@ export function RepayModal({ loanID, isOpen, onClose, onSuccess }: RepayModalPro
               size="md"
               className="flex-1"
               isLoading={txStatus === "pending"}
-              disabled={txStatus === "pending" || repayAmount <= 0}
+              disabled={txStatus === "pending" || repayAmount <= 0 || insufficientFlow}
               onClick={handleConfirm}
             >
               Confirm Repayment

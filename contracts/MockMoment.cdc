@@ -43,15 +43,15 @@ access(all) contract MockMoment: NonFungibleToken {
                     externalURL: MetadataViews.ExternalURL("https://momentsmoney.app"),
                     squareImage: MetadataViews.Media(
                         file: MetadataViews.HTTPFile(
-                            url: "https://assets.nbatopshot.com/editions/1/play_1_capture_Hero_2880_2880_Black.jpg"
+                            url: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mockmomentsquare&backgroundColor=b6e3f4"
                         ),
-                        mediaType: "image/jpeg"
+                        mediaType: "image/svg+xml"
                     ),
                     bannerImage: MetadataViews.Media(
                         file: MetadataViews.HTTPFile(
-                            url: "https://assets.nbatopshot.com/editions/1/play_1_capture_Hero_2880_2880_Black.jpg"
+                            url: "https://api.dicebear.com/9.x/pixel-art/svg?seed=mockmomentbanner&backgroundColor=b6e3f4"
                         ),
-                        mediaType: "image/jpeg"
+                        mediaType: "image/svg+xml"
                     ),
                     socials: {}
                 )
@@ -71,12 +71,16 @@ access(all) contract MockMoment: NonFungibleToken {
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             switch view {
                 case Type<MetadataViews.Display>():
+                    // Each NFT gets a unique pixel-art character seeded by its ID.
+                    // DiceBear generates deterministic, colorful NFT-style art per seed.
+                    let seed = "mockmoment".concat(self.id.toString())
+                    let imageURL = "https://api.dicebear.com/9.x/pixel-art/svg?seed="
+                        .concat(seed)
+                        .concat("&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf")
                     return MetadataViews.Display(
                         name: "Mock Moment #".concat(self.id.toString()),
-                        description: "A test Moment for the Moments Money testnet protocol.",
-                        thumbnail: MetadataViews.HTTPFile(
-                            url: "https://assets.nbatopshot.com/editions/1/play_1_capture_Hero_2880_2880_Black.jpg"
-                        )
+                        description: "A testnet Mock Moment for the Moments Money protocol.",
+                        thumbnail: MetadataViews.HTTPFile(url: imageURL)
                     )
             }
             return nil
