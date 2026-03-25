@@ -51,10 +51,6 @@ function WalletPickerModal({
     if (!isOpen) return;
     setLoading(true);
 
-    // Fetch wallets directly from the FCL Discovery HTTP API.
-    // Using fetch (not fcl.discovery.authn.subscribe) gives us full control
-    // over the request body, which must include supportedStrategies and
-    // userAgent for the discovery service to return a valid wallet list.
     const network = process.env.NEXT_PUBLIC_FLOW_NETWORK ?? "testnet";
     const endpoint = `https://fcl-discovery.onflow.org/api/${network}/authn`;
 
@@ -184,9 +180,13 @@ export function WalletButton() {
   const handleWalletSelect = async (service: WalletService) => {
     loginInitiated.current = true;
     setShowPicker(false);
-    // Authenticate with the chosen wallet service directly — bypasses the iframe
+    // Point FCL at this wallet's authn endpoint and let FCL drive the full
+    // auth protocol. Passing raw service objects from the HTTP discovery API
+    // to fcl.authenticate() breaks EXT/RPC wallets — FCL's extension-matching
+    // logic requires service objects that went through its internal pipeline.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (fcl as any).authenticate({ service });
+    await (fcl as any).config.put("discovery.wallet", service.endpoint);
+    await fcl.authenticate();
   };
 
   if (isLoading) {
