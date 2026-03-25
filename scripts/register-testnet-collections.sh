@@ -85,6 +85,7 @@ echo ""
 # ── Verify ────────────────────────────────────────────────────────────────────
 echo "▶  Verifying — fetching all registered collections..."
 flow scripts execute ./scripts/get_all_collections.cdc \
+  0x5f48399c13df4365 \
   --network "$NETWORK"
 
 echo ""

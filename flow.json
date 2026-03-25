@@ -60,14 +60,14 @@
       }
     },
     "testnet-deployer": {
-      "address": "PASTE_YOUR_TESTNET_ADDRESS_HERE",
+      "address": "0x5f48399c13df4365",
       "key": {
         "type": "file",
         "location": "./testnet-deployer.pkey"
       }
     },
     "mainnet-deployer": {
-      "address": "PASTE_YOUR_MAINNET_ADDRESS_HERE",
+      "address": "f8d6e0586b0a20c7",
       "key": {
         "type": "file",
         "location": "./mainnet-deployer.pkey"

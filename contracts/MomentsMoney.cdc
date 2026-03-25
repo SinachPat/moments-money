@@ -103,13 +103,13 @@ access(all) contract MomentsMoney {
     access(all) struct CollectionConfig {
         access(all) let collectionIdentifier: String
         access(all) let displayName: String
-        access(all) var floorPrice: UFix64
-        access(all) var ltvRatio: UFix64
+        access(all) let floorPrice: UFix64
+        access(all) let ltvRatio: UFix64
         // Annual simple interest rate, e.g. 0.15 = 15% APR
-        access(all) var interestRate: UFix64
+        access(all) let interestRate: UFix64
         // Maximum loan duration in seconds
-        access(all) var maxLoanDuration: UFix64
-        access(all) var isActive: Bool
+        access(all) let maxLoanDuration: UFix64
+        access(all) let isActive: Bool
         // 1 = Tier 1 (highest LTV), 3 = Tier 3 (lowest LTV)
         access(all) let tier: UInt8
 
@@ -251,11 +251,6 @@ access(all) contract MomentsMoney {
             self.nfts <- {}
         }
 
-        destroy() {
-            // All code paths must withdraw NFTs before destroying a vault.
-            // This destroy is only reached on emergency contract removal.
-            destroy self.nfts
-        }
     }
 
     // ─── LOAN RESOURCE ────────────────────────────────────────────────────────
@@ -339,14 +334,14 @@ access(all) contract MomentsMoney {
     // ─── LOAN MANAGER PUBLIC INTERFACE ───────────────────────────────────────
 
     access(all) resource interface LoanManagerPublic {
-        access(all) view fun getLoanInfo(loanID: UInt64): LoanInfo?
-        access(all) view fun getActiveLoans(borrower: Address): [LoanInfo]
+        access(all) fun getLoanInfo(loanID: UInt64): LoanInfo?
+        access(all) fun getActiveLoans(borrower: Address): [LoanInfo]
         access(all) view fun getCollectionConfig(identifier: String): CollectionConfig?
         access(all) view fun getAllCollections(): [CollectionConfig]
         access(all) view fun getMaxBorrowAmount(identifier: String, nftCount: UInt64): UFix64
         access(all) view fun getOutstandingBalance(loanID: UInt64): UFix64
         access(all) view fun getTreasuryBalance(): UFix64
-        access(all) view fun getProtocolStats(): ProtocolStats
+        access(all) fun getProtocolStats(): ProtocolStats
 
         access(all) fun createLoan(
             nfts: @[{NonFungibleToken.NFT}],
@@ -411,7 +406,7 @@ access(all) contract MomentsMoney {
             return loanRef!.getOutstandingBalance()
         }
 
-        access(all) view fun getLoanInfo(loanID: UInt64): LoanInfo? {
+        access(all) fun getLoanInfo(loanID: UInt64): LoanInfo? {
             let loanRef = &self.loans[loanID] as &Loan?
             if loanRef == nil { return nil }
             let loan = loanRef!
@@ -420,6 +415,10 @@ access(all) contract MomentsMoney {
             let outstanding = loan.getOutstandingBalance()
             let expired = now > expiry
             let gracePeriodEnd = expiry + MomentsMoney.GRACE_PERIOD
+            // Copy nftIDs out of the reference — Cadence 1.0 returns &[UInt64]
+            // via member access on a resource reference; iterate to get [UInt64].
+            var nftIDsCopy: [UInt64] = []
+            for id in loan.nftIDs { nftIDsCopy.append(id) }
             return LoanInfo(
                 id: loan.id,
                 borrower: loan.borrower,
@@ -429,7 +428,7 @@ access(all) contract MomentsMoney {
                 duration: loan.duration,
                 expiryTime: expiry,
                 collectionIdentifier: loan.collectionIdentifier,
-                nftIDs: loan.nftIDs,
+                nftIDs: nftIDsCopy,
                 repaidAmount: loan.repaidAmount,
                 outstandingBalance: outstanding,
                 totalRepayment: loan.getTotalRepayment(),
@@ -442,7 +441,7 @@ access(all) contract MomentsMoney {
             )
         }
 
-        access(all) view fun getActiveLoans(borrower: Address): [LoanInfo] {
+        access(all) fun getActiveLoans(borrower: Address): [LoanInfo] {
             let ids = self.borrowerLoans[borrower]
             if ids == nil { return [] }
             var activeLoans: [LoanInfo] = []
@@ -457,7 +456,7 @@ access(all) contract MomentsMoney {
             return activeLoans
         }
 
-        access(all) view fun getProtocolStats(): ProtocolStats {
+        access(all) fun getProtocolStats(): ProtocolStats {
             var activeCount: UInt64 = 0
             for id in self.loans.keys {
                 let loanRef = &self.loans[id] as &Loan?
@@ -668,7 +667,8 @@ access(all) contract MomentsMoney {
                 message: "Insufficient treasury to pay keeper fee")
 
             let outstandingDebt = loanRef.getOutstandingBalance()
-            let collateralIDs = loanRef.nftIDs
+            var collateralIDs: [UInt64] = []
+            for id in loanRef.nftIDs { collateralIDs.append(id) }
             let borrowerAddr = loanRef.borrower
             loanRef.markLiquidated()
 
@@ -726,12 +726,6 @@ access(all) contract MomentsMoney {
             self.borrowerLoans = {}
         }
 
-        destroy() {
-            destroy self.loans
-            destroy self.collateralVaults
-            destroy self.forfeitedVaults
-            destroy self.treasury
-        }
     }
 
     // ─── ADMIN RESOURCE ───────────────────────────────────────────────────────
@@ -786,29 +780,34 @@ access(all) contract MomentsMoney {
             maxLoanDuration: UFix64?,
             isActive: Bool?
         ) {
-            // Structs are value types — copy out, mutate, replace in the dict
-            var config = MomentsMoney.collections[collectionIdentifier]
+            // Structs are value types and fields are let in Cadence 1.0 —
+            // copy out the old config, validate, then replace with a new struct.
+            let old = MomentsMoney.collections[collectionIdentifier]
                 ?? panic("Collection not found: ".concat(collectionIdentifier))
 
             if let fp = floorPrice {
                 assert(fp > 0.0, message: "Floor price must be positive")
-                config.floorPrice = fp
             }
             if let ltv = ltvRatio {
                 assert(ltv > 0.0 && ltv <= 1.0, message: "LTV ratio must be between 0 and 1")
-                config.ltvRatio = ltv
             }
             if let ir = interestRate {
                 assert(ir > 0.0 && ir <= 1.0, message: "Interest rate must be between 0 and 1")
-                config.interestRate = ir
             }
             if let mld = maxLoanDuration {
                 assert(mld > 0.0, message: "Max duration must be positive")
-                config.maxLoanDuration = mld
             }
-            if let active = isActive {
-                config.isActive = active
-            }
+
+            let config = CollectionConfig(
+                collectionIdentifier: old.collectionIdentifier,
+                displayName: old.displayName,
+                floorPrice: floorPrice ?? old.floorPrice,
+                ltvRatio: ltvRatio ?? old.ltvRatio,
+                interestRate: interestRate ?? old.interestRate,
+                maxLoanDuration: maxLoanDuration ?? old.maxLoanDuration,
+                isActive: isActive ?? old.isActive,
+                tier: old.tier
+            )
 
             MomentsMoney.collections[collectionIdentifier] = config
 
@@ -822,10 +821,18 @@ access(all) contract MomentsMoney {
         // Deactivates a collection — no new loans accepted, existing loans unaffected.
         // Does not delete the record so history is preserved and re-activation is possible.
         access(all) fun deactivateCollection(collectionIdentifier: String) {
-            var config = MomentsMoney.collections[collectionIdentifier]
+            let old = MomentsMoney.collections[collectionIdentifier]
                 ?? panic("Collection not found: ".concat(collectionIdentifier))
-            config.isActive = false
-            MomentsMoney.collections[collectionIdentifier] = config
+            MomentsMoney.collections[collectionIdentifier] = CollectionConfig(
+                collectionIdentifier: old.collectionIdentifier,
+                displayName: old.displayName,
+                floorPrice: old.floorPrice,
+                ltvRatio: old.ltvRatio,
+                interestRate: old.interestRate,
+                maxLoanDuration: old.maxLoanDuration,
+                isActive: false,
+                tier: old.tier
+            )
             emit CollectionRemoved(identifier: collectionIdentifier)
         }
 
