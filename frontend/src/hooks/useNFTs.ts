@@ -20,8 +20,8 @@ function storageToPublicIdentifier(storagePath: string): string {
 // Cadence script that reads NFT IDs and attempts to resolve MetadataViews.Display
 // for name and thumbnail. Returns an array of {String: String?} dictionaries.
 const GET_USER_NFTS = `
-import "NonFungibleToken"
-import "MetadataViews"
+import NonFungibleToken from 0xNonFungibleToken
+import MetadataViews from 0xMetadataViews
 
 access(all) fun main(address: Address, collectionPublicPath: PublicPath): [{String: String}] {
     let account = getAccount(address)
