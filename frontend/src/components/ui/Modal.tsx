@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -73,7 +74,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
@@ -120,6 +121,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
