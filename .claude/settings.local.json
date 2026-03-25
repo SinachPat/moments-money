@@ -59,7 +59,8 @@
       "Bash(printf \"0x5f48399c13df4365\")",
       "Bash(sed -i '' 's/process\\\\.env\\\\.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? \"\"\"\"/\\( process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? \"\"\"\"\\).trim\\(\\)/g' /Users/USER/Desktop/moments-money/frontend/src/hooks/useLoan.ts /Users/USER/Desktop/moments-money/frontend/src/hooks/useProtocolStats.ts)",
       "Bash(sed -i '' 's/process\\\\.env\\\\.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? \"\"0x\"\"/\\(process.env.NEXT_PUBLIC_MOMENTS_MONEY_ADDRESS ?? \"\"0x\"\"\\).trim\\(\\)/g' /Users/USER/Desktop/moments-money/frontend/src/lib/fcl.ts)",
-      "Bash(flow transactions:*)"
+      "Bash(flow transactions:*)",
+      "Bash(/tmp/check_wallet.cdc:*)"
     ]
   }
 }
