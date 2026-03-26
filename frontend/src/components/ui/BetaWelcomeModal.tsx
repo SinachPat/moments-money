@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/context/AuthContext";
 
+const SESSION_KEY = "mm_beta_welcomed";
+
 export function BetaWelcomeModal() {
   const { isLoggedIn } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -13,10 +15,20 @@ export function BetaWelcomeModal() {
   // Only render portal after hydration
   useEffect(() => setMounted(true), []);
 
-  // Show the modal on every fresh login (false → true transition)
   useEffect(() => {
     if (isLoggedIn && !prevLoggedIn.current) {
-      setIsOpen(true);
+      // FCL restores existing sessions on page refresh via the same false→true
+      // transition as a real login. sessionStorage survives refreshes but is
+      // cleared when the tab closes or the user logs out — so this flag
+      // distinguishes "session restored" from "just logged in".
+      if (!sessionStorage.getItem(SESSION_KEY)) {
+        setIsOpen(true);
+        sessionStorage.setItem(SESSION_KEY, "1");
+      }
+    }
+    if (!isLoggedIn && prevLoggedIn.current) {
+      // User logged out — clear flag so next login shows the modal again
+      sessionStorage.removeItem(SESSION_KEY);
     }
     prevLoggedIn.current = isLoggedIn;
   }, [isLoggedIn]);
