@@ -122,6 +122,8 @@ function TopShotCard({
   gradientFrom,
   gradientVia,
   number,
+  shimmer = false,
+  interactive = false,
   style,
 }: {
   name: string;
@@ -132,20 +134,62 @@ function TopShotCard({
   gradientFrom: string;
   gradientVia: string;
   number: string;
+  shimmer?: boolean;
+  interactive?: boolean;
   style?: React.CSSProperties;
 }) {
   const { bg: rarityBg, text: rarityText } = rarityStyles[rarity];
+  const cardRef = useRef<HTMLDivElement>(null);
+  const glareRef = useRef<HTMLDivElement>(null);
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const card = cardRef.current;
+    const glare = glareRef.current;
+    if (!card || !glare) return;
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;   // 0–1
+    const y = (e.clientY - rect.top) / rect.height;    // 0–1
+    const rotateX = (0.5 - y) * 14;  // -7 to +7 deg
+    const rotateY = (x - 0.5) * 18;  // -9 to +9 deg
+    card.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+    card.style.transition = "transform 0.08s linear";
+    glare.style.opacity = "1";
+    glare.style.background = `radial-gradient(circle at ${x * 100}% ${y * 100}%, rgba(255,255,255,0.18) 0%, transparent 65%)`;
+  }
+
+  function handleMouseLeave() {
+    const card = cardRef.current;
+    const glare = glareRef.current;
+    if (!card || !glare) return;
+    card.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg) scale(1)";
+    card.style.transition = "transform 0.55s cubic-bezier(0.19,1,0.22,1)";
+    glare.style.opacity = "0";
+  }
 
   return (
     <div
+      ref={interactive ? cardRef : undefined}
+      onMouseMove={interactive ? handleMouseMove : undefined}
+      onMouseLeave={interactive ? handleMouseLeave : undefined}
       className="relative w-[320px] overflow-hidden rounded-2xl"
       style={{
         background: `linear-gradient(145deg, ${gradientFrom}, ${gradientVia}, #020617)`,
         boxShadow: "0 32px 80px rgba(0,0,0,0.7), 0 12px 32px rgba(0,0,0,0.5)",
         height: "460px",
+        willChange: interactive ? "transform" : undefined,
         ...style,
       }}
     >
+      {/* Mouse-tracking glare overlay — only rendered on interactive card */}
+      {interactive && (
+        <div
+          ref={glareRef}
+          className="pointer-events-none absolute inset-0 rounded-2xl"
+          style={{ opacity: 0, transition: "opacity 0.25s ease" }}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Holographic shimmer */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -155,6 +199,24 @@ function TopShotCard({
         }}
         aria-hidden="true"
       />
+
+      {/* Animated light sweep — only on front card, synced to fan cycle */}
+      {shimmer && (
+        <div
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          <div
+            className="absolute inset-0 w-1/3"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)",
+              animation: "shimmerSweep 7s ease-in-out infinite",
+              animationDelay: "3s",
+            }}
+          />
+        </div>
+      )}
 
       {/* Big jersey number watermark */}
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden select-none">
@@ -233,13 +295,21 @@ function TopShotCard({
 }
 
 function CardStack() {
+  const [isHovered, setIsHovered] = useState(false);
+  const playState = isHovered ? "paused" : "running";
+
   return (
     // On mobile: single centered card. On lg+: full 3-card fan stack.
-    <div className="relative mx-auto w-[320px] lg:h-[540px] lg:w-[420px] lg:mx-0">
+    <div
+      className="relative mx-auto w-[320px] lg:h-[540px] lg:w-[420px] lg:mx-0"
+      style={{ animation: "stackFloat 4.5s ease-in-out infinite", animationPlayState: playState }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Back card — hidden on mobile */}
       <div
-        className="hidden lg:block absolute bottom-0 left-0"
-        style={{ transform: "rotate(-9deg) translate(-28px, 18px)", zIndex: 1 }}
+        className="fan-back hidden lg:block absolute bottom-0 left-0"
+        style={{ zIndex: 1, animationPlayState: playState }}
       >
         <TopShotCard
           name="Ja Morant"
@@ -255,8 +325,8 @@ function CardStack() {
 
       {/* Middle card — hidden on mobile */}
       <div
-        className="hidden lg:block absolute bottom-0 left-0"
-        style={{ transform: "rotate(-3deg) translate(-10px, 8px)", zIndex: 2 }}
+        className="fan-middle hidden lg:block absolute bottom-0 left-0"
+        style={{ zIndex: 2, animationPlayState: playState }}
       >
         <TopShotCard
           name="Stephen Curry"
@@ -270,10 +340,10 @@ function CardStack() {
         />
       </div>
 
-      {/* Front card — always visible, only rotated on desktop */}
+      {/* Front card — always visible, only animated on desktop */}
       <div
-        className="lg:absolute lg:bottom-0 lg:left-0 lg:rotate-[3deg]"
-        style={{ zIndex: 3 }}
+        className="fan-front lg:absolute lg:bottom-0 lg:left-0"
+        style={{ zIndex: 3, animationPlayState: playState }}
       >
         <TopShotCard
           name="LeBron James"
@@ -284,6 +354,8 @@ function CardStack() {
           gradientFrom="#4c1d95"
           gradientVia="#1e1b4b"
           number="23"
+          shimmer
+          interactive
         />
       </div>
     </div>

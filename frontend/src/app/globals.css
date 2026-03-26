@@ -28,3 +28,64 @@
     transform: translateY(0);
   }
 }
+
+/* ── Card stack hero animations ───────────────────────────────────────────── */
+
+/* Whole stack breathes up and down */
+@keyframes stackFloat {
+  0%, 100% { transform: translateY(0px);   }
+  50%       { transform: translateY(-12px); }
+}
+
+/* Back card fans out then closes */
+@keyframes fanBack {
+  0%,  12% { transform: rotate(-9deg)  translate(-28px,  18px); }
+  42%, 58% { transform: rotate(-20deg) translate(-58px,  34px); }
+  88%, 100%{ transform: rotate(-9deg)  translate(-28px,  18px); }
+}
+
+/* Middle card shifts slightly */
+@keyframes fanMiddle {
+  0%,  12% { transform: rotate(-3deg)  translate(-10px, 8px); }
+  42%, 58% { transform: rotate(-4deg)  translate(-14px, 14px); }
+  88%, 100%{ transform: rotate(-3deg)  translate(-10px, 8px); }
+}
+
+/* Front card fans right */
+@keyframes fanFront {
+  0%,  12% { transform: rotate(3deg)  translate(0px,   0px);  }
+  42%, 58% { transform: rotate(10deg) translate(26px, -10px); }
+  88%, 100%{ transform: rotate(3deg)  translate(0px,   0px);  }
+}
+
+/* Subtle shimmer sweep across the front card */
+@keyframes shimmerSweep {
+  0%   { opacity: 0; transform: translateX(-100%) skewX(-12deg); }
+  15%  { opacity: 1; }
+  50%  { opacity: 1; transform: translateX(200%)  skewX(-12deg); }
+  51%, 100% { opacity: 0; transform: translateX(200%) skewX(-12deg); }
+}
+
+/*
+ * Fan animation utility classes — only active at the lg breakpoint.
+ * Using classes (not inline styles) means the animations are absent on mobile,
+ * so the front card does not shift/rotate on small screens where there is no stack.
+ * React controls animationPlayState via inline style to pause on hover.
+ */
+@media (min-width: 1024px) {
+  .fan-back   { animation: fanBack   7s ease-in-out infinite; }
+  .fan-middle { animation: fanMiddle 7s ease-in-out infinite; animation-delay: 0.35s; }
+  .fan-front  { animation: fanFront  7s ease-in-out infinite; animation-delay: 0.7s;  }
+}
+
+/* Respect reduced-motion preference — disable all decorative animations */
+@media (prefers-reduced-motion: reduce) {
+  .fan-back, .fan-middle, .fan-front {
+    animation: none !important;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
