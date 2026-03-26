@@ -384,7 +384,7 @@ Indexes on-chain events for fast dashboard queries. For MVP, direct on-chain scr
 ### 8.3 Pre-Mainnet Checklist
 
 - [ ] Internal code review by Cadence-experienced developer
-- [-] Testnet deployment and full lifecycle testing
+- [×] Testnet deployment and full lifecycle testing
 - [ ] Professional security audit (Cadence-specialized firm)
 - [ ] Economic simulation of edge cases (mass defaults, price crashes)
 - [ ] Admin key management plan (multi-sig setup)
