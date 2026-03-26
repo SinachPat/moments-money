@@ -2,7 +2,7 @@
 
 **Version**: 1.0
 **Date**: March 24, 2026
-**Author**: Patrick (Product), Claude (Co-author)
+**Author**: Patrick (Product)
 **Status**: Draft
 
 ---
