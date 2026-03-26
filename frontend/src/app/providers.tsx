@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/context/AuthContext";
+import { BetaWelcomeModal } from "@/components/ui/BetaWelcomeModal";
 // Side-effect import: registers FCL configuration at the client boundary
 import "@/lib/fcl";
 
@@ -21,7 +22,10 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <BetaWelcomeModal />
+        {children}
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

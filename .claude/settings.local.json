@@ -72,7 +72,8 @@
       "Bash(/tmp/check_treasury.cdc:*)",
       "Bash(curl -s \"https://rest-testnet.onflow.org/v1/accounts/5f48399c13df4365\")",
       "Bash(flow contracts:*)",
-      "Bash(flow -f /Users/USER/Desktop/moments-money/flow.json accounts update-contract MockMoment /Users/USER/Desktop/moments-money/contracts/MockMoment.cdc --signer testnet-deployer --network testnet)"
+      "Bash(flow -f /Users/USER/Desktop/moments-money/flow.json accounts update-contract MockMoment /Users/USER/Desktop/moments-money/contracts/MockMoment.cdc --signer testnet-deployer --network testnet)",
+      "Bash(find /Users/USER/Desktop/moments-money/tests -type f -name *.ts -o -name *.js -o -name *.cdc)"
     ]
   }
 }

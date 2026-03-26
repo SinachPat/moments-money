@@ -64,6 +64,11 @@ access(all) contract MomentsMoney {
         outstandingDebt: UFix64,
         collateralNFTIDs: [UInt64]
     )
+    // Emitted when the admin claims NFTs from a liquidated loan's forfeited vault.
+    access(all) event ForfeitedCollateralWithdrawn(
+        loanID: UInt64,
+        nftIDs: [UInt64]
+    )
     access(all) event CollateralDeposited(
         loanID: UInt64,
         collectionIdentifier: String,
@@ -270,6 +275,10 @@ access(all) contract MomentsMoney {
         access(all) let nftIDs: [UInt64]
         access(all) var repaidAmount: UFix64
         access(all) var status: LoanStatus
+        // Stored at creation so full repayment always returns NFTs to the original
+        // borrower — prevents a third-party payer from redirecting collateral to
+        // their own collection by supplying a different nftReceiverCap.
+        access(self) let nftReturnCap: Capability<&{NonFungibleToken.Receiver}>
 
         // ── Computed views ──
 
@@ -309,6 +318,12 @@ access(all) contract MomentsMoney {
             self.status = LoanStatus.Liquidated
         }
 
+        // Expose the stored cap so LoanManager.repayLoan can use it without
+        // the caller being able to substitute a different receiver.
+        access(contract) fun getNFTReturnCap(): Capability<&{NonFungibleToken.Receiver}> {
+            return self.nftReturnCap
+        }
+
         init(
             id: UInt64,
             borrower: Address,
@@ -316,7 +331,8 @@ access(all) contract MomentsMoney {
             interestRate: UFix64,
             duration: UFix64,
             collectionIdentifier: String,
-            nftIDs: [UInt64]
+            nftIDs: [UInt64],
+            nftReturnCap: Capability<&{NonFungibleToken.Receiver}>
         ) {
             self.id = id
             self.borrower = borrower
@@ -328,6 +344,7 @@ access(all) contract MomentsMoney {
             self.nftIDs = nftIDs
             self.repaidAmount = 0.0
             self.status = LoanStatus.Active
+            self.nftReturnCap = nftReturnCap
         }
     }
 
@@ -353,10 +370,11 @@ access(all) contract MomentsMoney {
             nftReturnReceiverCap: Capability<&{NonFungibleToken.Receiver}>
         )
 
+        // nftReceiverCap is intentionally absent — the return destination was locked
+        // in at loan creation and cannot be overridden by a third-party payer.
         access(all) fun repayLoan(
             loanID: UInt64,
-            payment: @{FungibleToken.Vault},
-            nftReceiverCap: Capability<&{NonFungibleToken.Receiver}>
+            payment: @{FungibleToken.Vault}
         )
 
         access(all) fun liquidateLoan(
@@ -511,10 +529,20 @@ access(all) contract MomentsMoney {
             assert(self.treasury.balance >= borrowAmount,
                 message: "Insufficient treasury balance — try a smaller amount")
 
-            // Snapshot NFT IDs before taking ownership of the array
+            // Validate each NFT's runtime type matches the declared collectionIdentifier,
+            // then snapshot its ID. This prevents an attacker from depositing cheap NFTs
+            // while claiming a high-floor collection to borrow more than the real LTV allows.
             let nftIDs: [UInt64] = []
             var idx = 0
             while idx < nfts.length {
+                let actualType = nfts[idx].getType().identifier
+                assert(
+                    actualType == collectionIdentifier,
+                    message: "NFT type mismatch: expected "
+                        .concat(collectionIdentifier)
+                        .concat(", got ")
+                        .concat(actualType)
+                )
                 nftIDs.append(nfts[idx].id)
                 idx = idx + 1
             }
@@ -537,7 +565,8 @@ access(all) contract MomentsMoney {
                 interestRate: config.interestRate,
                 duration: duration,
                 collectionIdentifier: collectionIdentifier,
-                nftIDs: nftIDs
+                nftIDs: nftIDs,
+                nftReturnCap: nftReturnReceiverCap
             )
             self.loans[loanID] <-! loan
             self.collateralVaults[loanID] <-! vault
@@ -580,15 +609,14 @@ access(all) contract MomentsMoney {
 
         // Send a FLOW payment against an active loan.
         // Partial payments reduce outstanding balance but do not release collateral.
-        // Full payment returns all collateral NFTs to the nftReceiverCap address.
+        // Full payment returns all collateral NFTs to the return cap stored at creation —
+        // the caller cannot redirect NFTs even if they are the one making the payment.
         access(all) fun repayLoan(
             loanID: UInt64,
-            payment: @{FungibleToken.Vault},
-            nftReceiverCap: Capability<&{NonFungibleToken.Receiver}>
+            payment: @{FungibleToken.Vault}
         ) {
             pre {
                 payment.balance > 0.0: "Payment must be positive"
-                nftReceiverCap.check(): "Invalid NFT receiver capability"
             }
 
             let loanRef = &self.loans[loanID] as &Loan?
@@ -615,6 +643,8 @@ access(all) contract MomentsMoney {
             if remainingAfter == 0.0 {
                 let totalInterestPaid = loanRef.getTotalInterest()
                 let borrowerAddr = loanRef.borrower
+                // Retrieve the cap that was locked in at loan creation
+                let returnCap = loanRef.getNFTReturnCap()
                 loanRef.markRepaid()
 
                 MomentsMoney.totalInterestEarned = MomentsMoney.totalInterestEarned + totalInterestPaid
@@ -624,7 +654,8 @@ access(all) contract MomentsMoney {
                 let nfts <- vault.withdrawAll()
                 destroy vault
 
-                let receiver = nftReceiverCap.borrow()!
+                let receiver = returnCap.borrow()
+                    ?? panic("NFT return capability is no longer valid — borrower may have unlinked their collection")
                 while nfts.length > 0 {
                     receiver.deposit(token: <- nfts.remove(at: 0))
                 }
@@ -709,8 +740,11 @@ access(all) contract MomentsMoney {
         access(all) fun withdrawForfeitedVault(adminRef: &Admin, loanID: UInt64): @[{NonFungibleToken.NFT}] {
             let vault <- self.forfeitedVaults.remove(key: loanID)
                 ?? panic("No forfeited vault for loan ".concat(loanID.toString()))
+            var nftIDsCopy: [UInt64] = []
+            for id in vault.getNFTIDs() { nftIDsCopy.append(id) }
             let nfts <- vault.withdrawAll()
             destroy vault
+            emit ForfeitedCollateralWithdrawn(loanID: loanID, nftIDs: nftIDsCopy)
             return <- nfts
         }
 
